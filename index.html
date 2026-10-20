@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Staw Studio Media Player - Persistent Edition</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ios: {
+                            red: '#FF3B30',
+                            redHover: '#E02B20',
+                            redSoft: '#FF6961',
+                            cardLight: 'rgba(255, 255, 255, 0.65)',
+                            cardDark: 'rgba(28, 28, 30, 0.65)',
+                            bgLight: '#F2F2F7',
+                            bgDark: '#000000'
+                        }
+                    },
+                    borderRadius: {
+                        '3xl': '1.75rem',
+                        '4xl': '2.25rem'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=Pretendard:wght@300;400;500;600;700&display=swap');
+        * { -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Pretendard', sans-serif; user-select: none; background-color: #F2F2F7; margin: 0; padding: 0; width: 100vw; overflow-x: hidden; }
+        .dark body { background-color: #000000; }
+        .ios-glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(35px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .dark .ios-glass { background: rgba(22, 22, 24, 0.7); backdrop-filter: blur(35px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.12); }
+        .ios-modal-glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(45px) saturate(210%); }
+        .dark .ios-modal-glass { background: rgba(24, 24, 28, 0.9); backdrop-filter: blur(45px) saturate(210%); }
+        .splash-fade { animation: splashAnim 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes splashAnim { 0% { opacity: 0; transform: scale(0.95); } 35% { opacity: 1; transform: scale(1); } 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05); visibility: hidden; } }
+        .ios-btn-press { transition: transform 0.15s ease, opacity 0.15s ease; }
+        .ios-btn-press:active { transform: scale(0.94); opacity: 0.8; }
+    </style>
+</head>
+<body class="bg-ios-bgLight dark:bg-ios-bgDark text-slate-900 dark:text-zinc-100 transition-colors duration-500 min-h-screen">
+
+    <div id="splashScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white text-slate-900 splash-fade">
+        <div class="flex flex-col items-center gap-4">
+            <div id="splashIcon" class="w-20 h-20 rounded-3xl bg-ios-red text-white flex items-center justify-center text-4xl shadow-xl shadow-ios-red/30 transition-all duration-500">
+                <i class="fa-solid fa-star"></i>
+            </div>
+            <h1 id="splashText" class="text-3xl font-bold tracking-tight text-slate-900">Staw</h1>
+        </div>
+    </div>
+
+    <div class="w-full max-w-6xl mx-auto min-h-screen flex flex-col relative bg-ios-bgLight dark:bg-ios-bgDark shadow-2xl transition-all pb-12">
+        <header id="mainHeader" class="sticky top-2 md:top-4 z-30 mx-3 md:mx-8 my-2 ios-glass rounded-3xl border border-white/60 dark:border-white/15 px-4 md:px-6 py-3 transition-all shadow-xl backdrop-blur-2xl">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex items-center justify-between w-full md:w-auto">
+                    <button onclick="switchTab('home')" class="flex items-center gap-2 text-ios-red font-bold text-lg md:text-xl tracking-tight ios-btn-press flex-shrink-0">
+                        <div class="w-8 h-8 rounded-xl bg-ios-red text-white flex items-center justify-center text-sm shadow-md shadow-ios-red/20">
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                        <span class="inline">Staw Server Player</span>
+                    </button>
+                </div>
+                <div class="relative w-full md:max-w-md md:ml-4">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="K-POP 곡, 아티스트, 앨범 검색..." class="w-full pl-10 pr-9 py-2 text-xs md:text-sm rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/10 focus:border-ios-red focus:outline-none dark:text-zinc-100">
+                </div>
+                <div class="hidden md:flex items-center gap-2 flex-shrink-0">
+                    <button onclick="switchTab('settings')" title="설정" class="px-3.5 py-2 flex items-center gap-2 rounded-2xl bg-black/5 dark:bg-white/10 hover:bg-black/10 ios-btn-press text-xs font-semibold">
+                        <i class="fa-solid fa-gear text-ios-red"></i> 설정 / 음악 관리
+                    </button>
+                    <button onclick="switchTab('library')" title="라이브러리" class="px-3.5 py-2 flex items-center gap-2 rounded-2xl bg-black/5 dark:bg-white/10 hover:bg-black/10 ios-btn-press text-xs font-semibold">
+                        <i class="fa-solid fa-bookmark text-ios-red"></i> 라이브러리
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="contentArea" class="flex-1 p-4 sm:p-6 md:p-8 pb-44 overflow-y-auto space-y-6">
+            <section id="viewHome" class="space-y-6">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h2 class="font-bold text-lg md:text-xl text-slate-900 dark:text-zinc-100 tracking-tight">서버에 저장된 K-POP 스테이션</h2>
+                    <span id="serverStatusBadge" class="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold rounded-full border border-emerald-500/20">서버 연결됨</span>
+                </div>
+                <div id="songList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5"></div>
+            </section>
+
+            <section id="viewLibrary" class="hidden space-y-4 max-w-3xl mx-auto w-full">
+                <h2 class="font-bold text-xl text-slate-900 dark:text-zinc-100 tracking-tight">라이브러리</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="libraryGrid"></div>
+            </section>
+
+            <section id="viewSettings" class="hidden space-y-5 max-w-2xl mx-auto w-full">
+                <div class="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-4">
+                    <h2 class="font-bold text-xl text-slate-900 dark:text-zinc-100 tracking-tight">음악 관리 (서버 동기화)</h2>
+                    <button onclick="openSongModal('add')" class="px-3.5 py-2 rounded-full bg-ios-red hover:bg-ios-redHover text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-ios-red/20 ios-btn-press">
+                        <i class="fa-solid fa-plus"></i> 음악 / MV 추가
+                    </button>
+                </div>
+                <div id="settingsSongList" class="space-y-2.5"></div>
+            </section>
+        </main>
+
+        <!-- Mini Player -->
+        <div id="miniPlayer" class="fixed bottom-4 left-3 right-3 sm:left-6 md:left-auto md:right-6 md:w-[480px] z-40 ios-glass border border-white/70 dark:border-white/20 transition-all duration-300 rounded-3xl shadow-2xl backdrop-blur-2xl px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                    <img id="miniAlbumCover" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150" class="w-12 h-12 rounded-2xl object-cover shadow-md">
+                    <div class="truncate">
+                        <h4 id="miniTitle" class="text-xs md:text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">곡을 선택하세요</h4>
+                        <p id="miniArtist" class="text-[11px] text-slate-500 dark:text-zinc-400 truncate">Staw Player</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="togglePlay()" id="playPauseBtn" class="w-10 h-10 rounded-full bg-ios-red text-white flex items-center justify-center shadow-lg ios-btn-press">
+                        <i class="fa-solid fa-play text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Media Modal -->
+        <div id="songModal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-md hidden flex items-center justify-center p-4">
+            <div class="ios-modal-glass rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl border border-white/50 dark:border-white/15">
+                <div class="flex justify-between items-center border-b border-black/5 dark:border-white/10 pb-3">
+                    <h3 id="modalTitle" class="font-bold text-slate-900 dark:text-zinc-100 text-base">콘텐츠 추가</h3>
+                    <button onclick="closeSongModal()" class="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <form id="songForm" onsubmit="handleSongFormSubmit(event)" class="space-y-3">
+                    <input type="hidden" id="editSongId" value="">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">아티스트</label>
+                        <input type="text" id="inputArtist" required class="w-full px-3 py-2 text-xs rounded-xl bg-black/5 border border-transparent focus:outline-none dark:text-zinc-100">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">곡명 (제목)</label>
+                        <input type="text" id="inputTitle" required class="w-full px-3 py-2 text-xs rounded-xl bg-black/5 border border-transparent focus:outline-none dark:text-zinc-100">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">앨범명</label>
+                        <input type="text" id="inputAlbum" required class="w-full px-3 py-2 text-xs rounded-xl bg-black/5 border border-transparent focus:outline-none dark:text-zinc-100">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">음악 파일 업로드 또는 URL</label>
+                        <input type="file" accept="audio/*" onchange="uploadFileToServer(event, 'audio')" class="text-xs w-full mb-1">
+                        <input type="url" id="inputAudio" required placeholder="https://... 또는 파일 선택" class="w-full px-3 py-2 text-xs rounded-xl bg-black/5 border border-transparent focus:outline-none dark:text-zinc-100">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">앨범 커버 URL</label>
+                        <input type="url" id="inputCover" placeholder="https://..." class="w-full px-3 py-2 text-xs rounded-xl bg-black/5 border border-transparent focus:outline-none dark:text-zinc-100">
+                    </div>
+                    <div class="flex justify-end gap-2 pt-3">
+                        <button type="button" onclick="closeSongModal()" class="px-4 py-2 rounded-xl bg-black/5 text-xs font-semibold">취소</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-ios-red text-xs font-semibold text-white">서버 저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioPlayer" class="hidden"></audio>
+
+    <script>
+        let songs = [];
+        let currentSongIndex = 0;
+        let isPlaying = false;
+        const audio = document.getElementById('audioPlayer');
+
+        // Fetch Songs from Express API
+        async function fetchSongsFromServer() {
+            try {
+                const res = await fetch('/api/songs');
+                songs = await res.json();
+                renderSongList();
+                renderSettingsList();
+            } catch (err) {
+                console.error("Failed to load songs from server:", err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchSongsFromServer();
+        });
+
+        function renderSongList() {
+            const container = document.getElementById('songList');
+            if (!container) return;
+            container.innerHTML = songs.map((song, idx) => `
+                <div onclick="playSongAtIndex(${idx})" class="p-3 rounded-3xl ios-glass border border-white/20 cursor-pointer">
+                    <img src="${song.cover || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500'}" class="w-full aspect-square object-cover rounded-2xl mb-2">
+                    <h4 class="text-xs font-bold truncate">${song.title}</h4>
+                    <p class="text-[11px] text-slate-400 truncate">${song.artist}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderSettingsList() {
+            const container = document.getElementById('settingsSongList');
+            if (!container) return;
+            container.innerHTML = songs.map((song, idx) => `
+                <div class="flex items-center justify-between p-3 ios-glass rounded-2xl border border-white/20">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <img src="${song.cover}" class="w-10 h-10 rounded-xl object-cover">
+                        <div class="truncate">
+                            <h4 class="text-xs font-bold truncate">${song.title}</h4>
+                            <p class="text-[11px] text-slate-400 truncate">${song.artist}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openSongModal('edit', '${song.id}')" class="px-2.5 py-1.5 rounded-xl bg-black/5 text-xs font-medium">수정</button>
+                        <button onclick="deleteSongFromServer('${song.id}')" class="px-2.5 py-1.5 rounded-xl bg-ios-red/10 text-xs font-medium text-ios-red">삭제</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function uploadFileToServer(event, targetType) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (targetType === 'audio') {
+                    document.getElementById('inputAudio').value = data.url;
+                }
+            } catch (err) {
+                alert('파일 업로드에 실패했습니다.');
+            }
+        }
+
+        async function handleSongFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('editSongId').value;
+            const songData = {
+                title: document.getElementById('inputTitle').value,
+                artist: document.getElementById('inputArtist').value,
+                album: document.getElementById('inputAlbum').value,
+                audio: document.getElementById('inputAudio').value,
+                cover: document.getElementById('inputCover').value || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500'
+            };
+
+            if (id) {
+                // PUT Update
+                await fetch(`/api/songs/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(songData)
+                });
+            } else {
+                // POST Create
+                await fetch('/api/songs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(songData)
+                });
+            }
+
+            closeSongModal();
+            fetchSongsFromServer();
+        }
+
+        async function deleteSongFromServer(id) {
+            if (!confirm('정말 이 음악을 삭제하시겠습니까? (서버에서 완전 삭제됩니다)')) return;
+            await fetch(`/api/songs/${id}`, { method: 'DELETE' });
+            fetchSongsFromServer();
+        }
+
+        function playSongAtIndex(index) {
+            currentSongIndex = index;
+            const song = songs[index];
+            document.getElementById('miniTitle').textContent = song.title;
+            document.getElementById('miniArtist').textContent = song.artist;
+            document.getElementById('miniAlbumCover').src = song.cover;
+            audio.src = song.audio;
+            audio.play();
+            isPlaying = true;
+            document.getElementById('playPauseBtn').innerHTML = '<i class="fa-solid fa-pause text-sm"></i>';
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                audio.pause();
+                isPlaying = false;
+                document.getElementById('playPauseBtn').innerHTML = '<i class="fa-solid fa-play text-sm"></i>';
+            } else if (songs.length > 0) {
+                audio.play();
+                isPlaying = true;
+                document.getElementById('playPauseBtn').innerHTML = '<i class="fa-solid fa-pause text-sm"></i>';
+            }
+        }
+
+        function openSongModal(mode, songId = null) {
+            document.getElementById('songModal').classList.remove('hidden');
+            if (mode === 'edit' && songId) {
+                const song = songs.find(s => s.id === songId);
+                document.getElementById('modalTitle').textContent = '음악 수정';
+                document.getElementById('editSongId').value = song.id;
+                document.getElementById('inputTitle').value = song.title;
+                document.getElementById('inputArtist').value = song.artist;
+                document.getElementById('inputAlbum').value = song.album;
+                document.getElementById('inputAudio').value = song.audio;
+                document.getElementById('inputCover').value = song.cover;
+            } else {
+                document.getElementById('modalTitle').textContent = '음악 추가';
+                document.getElementById('songForm').reset();
+                document.getElementById('editSongId').value = '';
+            }
+        }
+
+        function closeSongModal() {
+            document.getElementById('songModal').classList.add('hidden');
+        }
+
+        function switchTab(tab) {
+            document.getElementById('viewHome').classList.toggle('hidden', tab !== 'home');
+            document.getElementById('viewLibrary').classList.toggle('hidden', tab !== 'library');
+            document.getElementById('viewSettings').classList.toggle('hidden', tab !== 'settings');
+        }
+    </script>
+</body>
+</html>
